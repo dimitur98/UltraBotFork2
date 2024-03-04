@@ -117,7 +117,7 @@ async def sniper(update: Update):
    
 
     # chat = next(x for x in result.chats if x.title == "SIM BOT ULTRA")
-    entity = await client.get_entity('https://t.me/+8d_erKU1nm5iYjM8')
+    entity = await client.get_entity('invitation link')
     group_entity = InputPeerChannel(entity.id, entity.access_hash)
 
     @client.on(events.NewMessage(chats=group_entity))
