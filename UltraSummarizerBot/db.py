@@ -13,7 +13,7 @@ class DB:
     pool = None
 
     def __init__(self):
-        self.pool = PooledDB(self.create_db_connection, mincached=1, maxcached=10, maxshared=3, maxconnections=10)
+        self.pool = PooledDB(self.create_db_connection, mincached=1, maxcached=10, maxshared=3, maxconnections=10, ping = 1)
 
         self.create_table_filter()
         self.create_table_signal()
