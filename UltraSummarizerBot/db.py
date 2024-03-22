@@ -210,13 +210,18 @@ class DB:
 
         return response
     
-    def get_signals_by_address(self, address, limit = None):
-        sql = """SELECT * FROM signal WHERE address = :address ORDER BY date DESC"""
+    def get_signals_by_address(self, address, limit = None, excludeSent = True, user_id = None):
+        sql = """SELECT * FROM signal s WHERE s.address = :address """
+
+        if excludeSent:
+            sql += " AND NOT EXISTS (SELECT * FROM user_signal us WHERE us.signal_address = s.address AND us.user_id = @user_id AND us.is_sent = True)"
+
+        sql += "ORDER BY s.date DESC"
 
         if limit is not None:
-            sql += """LIMIT :limit"""
+            sql += """ LIMIT :limit"""
 
-        response = self.execute_sql_fetch_one(sql, query_params = {"address": address, "limit": limit})
+        response = self.execute_sql_fetch_all(sql, query_params = {"address": address, "limit": limit, "user_id": user_id})
 
         if response is not None:
             signals = list()
@@ -228,10 +233,10 @@ class DB:
 
         return response
     
-    def get_user_signal(self, user_id, address, is_sent = True):
-        sql = """SELECT * FROM user_signal WHERE user_id = :user_id AND address = :address AND is_sent = @is_sent"""
+    def get_user_signal(self, user_id, signal_address, is_sent = True):
+        sql = """SELECT * FROM user_signal WHERE user_id = :user_id AND signal_address = :signal_address AND is_sent = @is_sent"""
 
-        response = self.execute_sql_fetch_one(sql, query_params = {"user_id": user_id, "address": address, "is_sent": is_sent})
+        response = self.execute_sql_fetch_one(sql, query_params = {"user_id": user_id, "signal_address": signal_address, "is_sent": is_sent})
 
         if response is not None:
             return UserSignal(response[1], response[2], is_sent = response[3])
@@ -254,6 +259,7 @@ class DB:
         sql = """ CREATE TABLE IF NOT EXISTS signal(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         address TEXT NOT NULL,
+        mcap INTEGER,
         text TEXT NOT NULL,
         sell_tax REAL,
         buy_tax REAL,
