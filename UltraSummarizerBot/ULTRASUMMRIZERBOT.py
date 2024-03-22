@@ -170,26 +170,31 @@ async def print_signal(signal):
     print("new check")
     for user_id, filter in filters_dict.items():
         if not filter.is_started:
-            return
+            continue
         print(user_id)
         if not basic_filters(filter, signal):
-            return
+            continue
 
         if not filter.show_duplicates:
             user_signal = db.get_user_signal(user_id, signal.address)
 
             if user_signal is not None:
-                return
+                continue
 
         if filter.signal_repetitions is not None:
             signals = db.get_signals_by_address(signal.address, limit = filter.signal_repetitions)
             
+            not_valid = False
             for item in signals:
                 if not basic_filters(filter, item):
-                    return
+                    not_valid = True
+                    break
+                
+            if not_valid:
+                continue
 
             if len(signals) < filter.signal_repetitions:
-                return
+                continue
         
             if filter.time_from is not None and filter.time_to is not None:
                 print("repeated signal")
@@ -200,11 +205,11 @@ async def print_signal(signal):
                 signal.calls += 1
                 print(minutes_diff)
                 if filter.time_from >= minutes_diff or filter.time_to <= minutes_diff:
-                    return
+                    continue
 
         if filter.very_high_hype_alerts:
             if signal.alarm_type is None or signal.alarm_type != AlarmType.VERY_HIGH:
-                return
+                continue
 
         
 
