@@ -163,7 +163,7 @@ def basic_filters(filter, signal):
     
     return True
 
-async def print_signal(signal):
+async def print_signal(signal, oto_bot = False):
     global bot
     global filters_dict
 
@@ -211,7 +211,11 @@ async def print_signal(signal):
             if signal.alarm_type is None or signal.alarm_type != AlarmType.VERY_HIGH:
                 continue
 
-        
+        if oto_bot:
+            user_signal = db.get_user_signal(user_id, signal.address)
+
+            if user_signal is not None:
+                continue
 
         db.insert_user_signal(user_id, signal.address)
 
@@ -276,7 +280,7 @@ Hype Alarm Market Cap: {mcap}"""
                     signal.buy_tax = buy_tax
                     signal.sell_tax = sell_tax
                     print("in sell tax check")
-                    await print_signal(signal)
+                    await print_signal(signal, True)
         else:
             #Filters
             if address is None: 
@@ -505,16 +509,14 @@ async def telegram_api_responses(update: Update, context: ContextTypes.DEFAULT_T
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f'Update {update} caused error {context.error}') 
 
-
-
 #Start app
 if __name__ == '__main__':
     print('Running...')
 
     db = DB()
     bot = Bot(token=TOKEN)
-
     app = Application.builder().token(TOKEN).build()
+    
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(sniper())
