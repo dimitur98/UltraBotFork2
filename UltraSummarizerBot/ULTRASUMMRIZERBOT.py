@@ -214,11 +214,11 @@ async def print_signal(signal):
         
 
         db.insert_user_signal(user_id, signal.address)
-        await bot.send_message(chat_id=filter.chat_id, text = signal.text)
-        # if filter.send_to_group:
-        #     await bot.send_message(chat_id=CHAT_ID, text = signal.text)
-        # else:
-        #     await update.message.reply_text(signal.text)
+
+        if filter.send_to_group:
+            await bot.send_message(chat_id=CHAT_ID, text = signal.text)
+        else:
+            await bot.send_message(chat_id=filter.chat_id, text = signal.text)
 
 async def sniper():
     global db
@@ -307,6 +307,7 @@ def get_filters_keyboard(user_id, chat_id) -> list:
         [InlineKeyboardButton("Signal Repetitions", callback_data='signal_repetitions')],
         [InlineKeyboardButton("✅ Very High Hype Signals Only" if filter.very_high_hype_alerts else "❌ Very High Hype Signals Only", callback_data='very_high_hype_alerts')],
         [InlineKeyboardButton("✅ Show Duplicates" if filter.show_duplicates else "❌ Show Duplicates", callback_data='show_duplicates')],
+        [InlineKeyboardButton("✅ Send To Group" if filter.send_to_group else "❌ Send To Group", callback_data='send_to_group')],
         [InlineKeyboardButton("Reset Filters", callback_data='reset_filters')]    
     ]
 
@@ -351,7 +352,8 @@ Time From: {'Not set' if filter.time_from is None else filter.time_from}
 Time To: {'Not set' if filter.time_to is None else filter.time_to}
 Signal Repetitions: {'Not set' if filter.signal_repetitions is None else filter.signal_repetitions}
 Very High Hype Alerts: {'Yes' if filter.very_high_hype_alerts else 'No'}
-Show Duplicates: {'Yes' if filter.show_duplicates else 'No'}""")
+Show Duplicates: {'Yes' if filter.show_duplicates else 'No'}
+Send To Group: {'Yes' if filter.send_to_group else 'No'}""")
 
 
 async def stop_sniper(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -383,8 +385,8 @@ async def filters_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     last_button_pressed = query.data
-
-    if query.data == 'show_duplicates' or query.data == 'very_high_hype_alerts' or query.data == 'reset_filters':
+    
+    if query.data == 'show_duplicates' or query.data == 'very_high_hype_alerts' or query.data == 'reset_filters' or query.data == 'send_to_group':
         user_id = update.callback_query.from_user.id
         chat_id = update.callback_query.message.chat.id
         # filter = db.get_filter_by_user_id(user_id)
@@ -402,10 +404,10 @@ async def filters_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             filter.very_high_hype_alerts = not filter.very_high_hype_alerts
 
             await query.edit_message_reply_markup(InlineKeyboardMarkup(get_filters_keyboard(user_id, chat_id)))
-        # elif query.data == 'send_to_group':
-        #     send_to_group = not send_to_group
+        elif query.data == 'send_to_group':
+            filter.send_to_group = not filter.send_to_group
 
-        #     await query.edit_message_reply_markup(InlineKeyboardMarkup(get_filters_keyboard()))
+            await query.edit_message_reply_markup(InlineKeyboardMarkup(get_filters_keyboard(user_id, chat_id)))
         elif query.data == 'reset_filters':
             db.delete_user_signal(user_id)
             filters_dict.pop(user_id)

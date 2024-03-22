@@ -16,6 +16,7 @@ class Filter:
     show_duplicates = False
     chat_id = None
     is_started = False
+    send_to_group = False
 
     def __init__(self, chat_id):
         print(chat_id)
