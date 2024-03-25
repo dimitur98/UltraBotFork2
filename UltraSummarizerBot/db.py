@@ -303,7 +303,7 @@ class DB:
         text TEXT NOT NULL,
         sell_tax REAL,
         buy_tax REAL,
-        date TIMESTAMP NOT NULL,
+        date DATETIME NOT NULL,
         total_calls INTEGER NOT NULL
         )
         """
