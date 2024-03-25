@@ -167,11 +167,13 @@ async def print_signal(signal, oto_bot = False):
     global bot
     global filters_dict
 
-    print("new check")
+    print(f'Date: {signal.date} - new check')
     for user_id, filter in filters_dict.items():
         if not filter.is_started:
             continue
-        print(user_id)
+        
+        print(f'userId: {user_id}')
+        
         if not basic_filters(filter, signal):
             continue
 
@@ -275,11 +277,11 @@ Hype Alarm Market Cap: {mcap}"""
 
             if report_address is not None and buy_tax is not None and sell_tax is not None:
                 signal = db.get_last_signal_by_address(report_address)
-                print(signal)
+
                 if signal is not None:
                     signal.buy_tax = buy_tax
                     signal.sell_tax = sell_tax
-                    print("in sell tax check")
+
                     await print_signal(signal, True)
         else:
             #Filters
@@ -298,7 +300,6 @@ def get_filters_keyboard(user_id, chat_id) -> list:
     filter = filters_dict.get(user_id)
     
     if filter is None:
-        print("chat_id in get filter keyboards: ",chat_id)
         filter = Filter(chat_id)
         filters_dict[user_id] = filter
 
@@ -329,10 +330,14 @@ def get_telegram_api_keyboard() -> list:
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     #global db
     # db.update_filter_start(update.message.from_user.id, True)
-    filter = get_or_create_filter(update.message.from_user.id, update.message.chat_id)
+    user_id = update.message.from_user.id
+    chat_id = update.message.chat_id
+    filter = get_or_create_filter(user_id, chat_id)
     filter.is_started = True
 
+    db.insert_filter(filter, user_id)
 
+    print('UserId {user_id} started bot')
 
 async def set_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('Set filters:', reply_markup = InlineKeyboardMarkup(get_filters_keyboard(update.message.from_user.id, update.message.chat_id)))
@@ -357,12 +362,20 @@ Time To: {'Not set' if filter.time_to is None else filter.time_to}
 Signal Repetitions: {'Not set' if filter.signal_repetitions is None else filter.signal_repetitions}
 Very High Hype Alerts: {'Yes' if filter.very_high_hype_alerts else 'No'}
 Show Duplicates: {'Yes' if filter.show_duplicates else 'No'}
-Send To Group: {'Yes' if filter.send_to_group else 'No'}""")
+Send To Group: {'Yes' if filter.send_to_group else 'No'}
+Is Started: {'Yes' if filter.is_started else 'No'}""")
 
 
 async def stop_sniper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    filter = get_or_create_filter(update.message.from_user.id, update.message.chat_id)
+    user_id = update.message.from_user.id
+    chat_id = update.message.chat_id
+    filter = get_or_create_filter(user_id, chat_id)
     filter.is_started = False
+
+    db.insert_filter(filter, user_id)
+
+    print('UserId {user_id} stopped bot')
+
     # global db
     # print(update)
     # db.update_filter_start(update.message.from_user.id, False)
@@ -414,9 +427,11 @@ async def filters_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_reply_markup(InlineKeyboardMarkup(get_filters_keyboard(user_id, chat_id)))
         elif query.data == 'reset_filters':
             db.delete_user_signal(user_id)
+            db.delete_filter(user_id)
             filters_dict.pop(user_id)
 
-        # db.insert_filter(filter, user_id)
+        if query.data != 'reset_filters':
+            db.insert_filter(filter, user_id)
         
     else:
         await query.message.reply_text(f'Please enter {query.data}:')
@@ -483,6 +498,7 @@ async def fiters_responses(update: Update, context: ContextTypes.DEFAULT_TYPE):
         filters_dict[user_id] = filter
 
     filter.__setattr__(last_button_pressed, int(update.message.text))
+    db.insert_filter(filter, user_id)
 
     await update.message.reply_text(f"{last_button_pressed} is set to {update.message.text}.")
 
@@ -517,6 +533,11 @@ if __name__ == '__main__':
     bot = Bot(token=TOKEN)
     app = Application.builder().token(TOKEN).build()
     
+    filters_dict = db.get_all_filters_dict()
+
+    if filters_dict is None:
+        filters_dict = {} 
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(sniper())

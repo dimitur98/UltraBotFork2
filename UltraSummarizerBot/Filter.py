@@ -1,4 +1,5 @@
 class Filter:
+    user_id = None
     mcap_from = None
     mcap_to = None
     total_calls_from = None

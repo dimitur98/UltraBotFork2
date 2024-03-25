@@ -87,7 +87,8 @@ class DB:
             medium_hype_alerts,
             show_duplicates,
             chat_id,
-            is_started
+            is_started,
+            send_to_group
         )
         VALUES(
             :user_id,
@@ -107,7 +108,8 @@ class DB:
             :medium_hype_alerts,
             :show_duplicates,
             :chat_id,
-            :is_started
+            :is_started,
+            :send_to_group
         );
         """
         query_params = {
@@ -128,7 +130,8 @@ class DB:
             "medium_hype_alerts":filter.medium_hype_alerts,
             "show_duplicates": filter.show_duplicates,
             "chat_id": filter.chat_id,
-            "is_started": filter.is_started
+            "is_started": filter.is_started,
+            "send_to_group": filter.send_to_group
         }
         
         self.execute_sql(sql, query_params = query_params)
@@ -192,6 +195,43 @@ class DB:
 
         return response
     
+    def get_all_filters_dict(self):
+        sql = """SELECT * FROM filter"""
+
+        response = self.execute_sql_fetch_all(sql)
+
+        if response is not None:
+            filters = {}
+
+            for r in response:
+                filter = Filter(r[17])    
+
+                filter.user_id = r[0]
+                filter.mcap_from = r[1]
+                filter.mcap_to = r[2]
+                filter.total_calls_from = r[3]
+                filter.total_calls_to = r[4]
+                filter.sell_tax_from = r[5]
+                filter.sell_tax_to = r[6]
+                filter.buy_tax_from = r[7]
+                filter.buy_tax_to = r[8]
+                filter.time_from = r[9]
+                filter.time_to = r[10]
+                filter.signal_repetitions = r[11]
+                filter.very_high_hype_alerts = r[12]
+                filter.high_hype_alerts = r[13]
+                filter.medium_hype_alerts = r[14]
+                filter.show_duplicates = r[15]
+                filter.is_started = r[16]
+                filter.send_to_group = r[18]
+
+                filters[r[0]] = filter
+
+            return filters
+
+        return response
+
+
     def get_first_signal_by_address(self, address):
         sql = """SELECT * FROM signal WHERE address = :address ORDER BY date"""
         response = self.execute_sql_fetch_one(sql, query_params = {"address": address})
@@ -245,14 +285,14 @@ class DB:
     
     #delete functions
     def delete_user_signal(self, user_id):
-        sql = """DELETE FROM user_signal WHERE user_id = :user_id"""
+        sql = """DELETE FROM user_signal WHERE `user_id` = :user_id"""
 
-        self.execute_sql(sql, query_params = { "user_id", user_id })
+        self.execute_sql(sql, query_params = { "user_id": int(user_id) })
 
     def delete_filter(self, user_id):
         sql = """DELETE FROM filter WHERE user_id = :user_id"""
 
-        self.execute_sql(sql, query_params = { "user_id", user_id })
+        self.execute_sql(sql, query_params = { "user_id": user_id })
 
     #Create db tables
     def create_table_signal(self):
@@ -288,7 +328,8 @@ class DB:
         medium_hype_alerts BOOLEAN,
         show_duplicates BOOLEAN,
         chat_id INTEGER,
-        is_started BOOLEAN
+        is_started BOOLEAN,
+        send_to_group BOOLEAN
         )
         """
         self.execute_sql(sql)
