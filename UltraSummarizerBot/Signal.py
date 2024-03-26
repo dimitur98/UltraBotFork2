@@ -6,6 +6,7 @@ class Signal:
     sell_tax = None
     date = None
     total_calls = 1
+    alarm_type = None
 
     def __init__(self, address, mcap, text, date, total_calls):
         self.address = address

@@ -204,7 +204,7 @@ class DB:
             filters = {}
 
             for r in response:
-                filter = Filter(r[17])    
+                filter = Filter(r[16])    
 
                 filter.user_id = r[0]
                 filter.mcap_from = r[1]
@@ -222,7 +222,7 @@ class DB:
                 filter.high_hype_alerts = r[13]
                 filter.medium_hype_alerts = r[14]
                 filter.show_duplicates = r[15]
-                filter.is_started = r[16]
+                filter.is_started = r[17]
                 filter.send_to_group = r[18]
 
                 filters[r[0]] = filter

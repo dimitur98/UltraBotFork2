@@ -221,6 +221,8 @@ async def print_signal(signal, oto_bot = False):
 
         db.insert_user_signal(user_id, signal.address)
 
+        print(f'{signal.date}: {signal.address} is sent to {filter.chat_id}')
+        
         if filter.send_to_group:
             await bot.send_message(chat_id=CHAT_ID, text = signal.text)
         else:
@@ -312,7 +314,7 @@ def get_filters_keyboard(user_id, chat_id) -> list:
         [InlineKeyboardButton("Signal Repetitions", callback_data='signal_repetitions')],
         [InlineKeyboardButton("✅ Very High Hype Signals Only" if filter.very_high_hype_alerts else "❌ Very High Hype Signals Only", callback_data='very_high_hype_alerts')],
         [InlineKeyboardButton("✅ Show Duplicates" if filter.show_duplicates else "❌ Show Duplicates", callback_data='show_duplicates')],
-        [InlineKeyboardButton("✅ Send To Group" if filter.send_to_group else "❌ Send To Group", callback_data='send_to_group')],
+        # [InlineKeyboardButton("✅ Send To Group" if filter.send_to_group else "❌ Send To Group", callback_data='send_to_group')],
         [InlineKeyboardButton("Reset Filters", callback_data='reset_filters')]    
     ]
 
@@ -334,10 +336,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id
     filter = get_or_create_filter(user_id, chat_id)
     filter.is_started = True
-
+    
     db.insert_filter(filter, user_id)
 
-    print('UserId {user_id} started bot')
+    print(f'UserId {user_id} started bot')
 
 async def set_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('Set filters:', reply_markup = InlineKeyboardMarkup(get_filters_keyboard(update.message.from_user.id, update.message.chat_id)))
@@ -348,7 +350,10 @@ async def check_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # filter = db.get_filter_by_user_id(update.message.from_user.id)
     filter = filters_dict.get(update.message.from_user.id)
-
+    if filter is None:
+        await update.message.reply_text("No filters set.")
+        return
+    
     await update.message.reply_text(f"""MCap From: {'Not set' if filter.mcap_from is None else filter.mcap_from}
 MCap To: {'Not set' if filter.mcap_to is None else filter.mcap_to}
 Total Calls From: {'Not set' if filter.total_calls_from is None else filter.total_calls_from}
@@ -362,7 +367,6 @@ Time To: {'Not set' if filter.time_to is None else filter.time_to}
 Signal Repetitions: {'Not set' if filter.signal_repetitions is None else filter.signal_repetitions}
 Very High Hype Alerts: {'Yes' if filter.very_high_hype_alerts else 'No'}
 Show Duplicates: {'Yes' if filter.show_duplicates else 'No'}
-Send To Group: {'Yes' if filter.send_to_group else 'No'}
 Is Started: {'Yes' if filter.is_started else 'No'}""")
 
 
@@ -374,7 +378,7 @@ async def stop_sniper(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     db.insert_filter(filter, user_id)
 
-    print('UserId {user_id} stopped bot')
+    print(f'UserId {user_id} stopped bot')
 
     # global db
     # print(update)
@@ -429,7 +433,7 @@ async def filters_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             db.delete_user_signal(user_id)
             db.delete_filter(user_id)
             filters_dict.pop(user_id)
-
+            await bot.send_message(chat_id=chat_id, text = "All filters are set to null.")
         if query.data != 'reset_filters':
             db.insert_filter(filter, user_id)
         
